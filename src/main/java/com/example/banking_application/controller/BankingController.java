@@ -4,10 +4,10 @@ import com.example.banking_application.model.Account;
 import com.example.banking_application.service.AccountService;
 import com.example.banking_application.service.BankingService;
 import com.example.banking_application.service.CustomerService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("/api")
 public class BankingController {
 
     private final BankingService bankingService;
@@ -35,13 +35,50 @@ public class BankingController {
         return customerService.getCustomerMessage();
     }
 
-    @GetMapping("/accounts/sample")
+    @GetMapping("accounts/summary")
+    public String getAccountSummary(){
+        return accountService.getSummary();
+    }
+
+    @GetMapping("/accounts")
     public Account getSampleAccounts(){
         return accountService.createSampleAccount();
     }
 
-    @GetMapping("accounts/summary")
-    public String getAccountSummary(){
-        return accountService.getSummary();
+    @GetMapping("/accounts/{id}")
+    public String getAccountById(@PathVariable String id){
+        return "Requested account ID: " + id;
+    }
+
+    @GetMapping("/accounts/{id}/summary")
+    public String getAccountSummary(@PathVariable String id){
+        return "Account summary requested for account ID: " + id;
+    }
+
+    @PostMapping("/accounts")
+    public Account createAccount(@RequestBody Account account){
+        return accountService.createAccount(account);
+    }
+
+    @PostMapping("/accounts/test")
+    public Account createAccountTest(@RequestBody Account account){
+        return accountService.createAccount(account);
+    }
+
+    @PutMapping("/accounts/{id}")
+    public Account updateAccount(@PathVariable Long id, @RequestBody Account account){
+        account.setId(id);
+
+        return account;
+    }
+
+    @DeleteMapping("/accounts/{id}")
+    public String deleteAccount(@PathVariable Long id){
+        return "Account " + id + " deleted successfully";
+    }
+
+    @DeleteMapping("/accounts/{id}/test")
+    public String deleteAccountTest(@PathVariable Long id){
+        return "Test deletion for account: " + id;
     }
 }

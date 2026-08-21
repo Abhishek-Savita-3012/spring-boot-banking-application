@@ -24,4 +24,8 @@ public class AccountService {
         return "Account " + account.getAccountNumber() + " belongs to " + account.getAccountHolderName()
                 + " and has a balance of " + account.getBalance();
     }
+
+    public Account createAccount(Account account){
+        return account;
+    }
 }

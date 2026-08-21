@@ -1,13 +1,27 @@
 package com.example.banking_application.model;
 
+import jakarta.persistence.*;
+
+@Entity
 public class Account {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String accountNumber;
     private String accountHolderName;
+
+    @Enumerated(EnumType.STRING)
     private AccountType accountType;
+
     private double balance;
     private String email;
+
+    public Account() {
+    }
+
+    //getters and setters
 
     public void setId(Long id) {
         this.id = id;

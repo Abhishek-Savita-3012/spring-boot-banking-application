@@ -6,6 +6,8 @@ import com.example.banking_application.service.BankingService;
 import com.example.banking_application.service.CustomerService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 public class BankingController {
@@ -40,14 +42,24 @@ public class BankingController {
         return accountService.getSummary();
     }
 
+//    @GetMapping("/accounts")
+//    public Account getSampleAccounts(){
+//        return accountService.createSampleAccount();
+//    }
+
     @GetMapping("/accounts")
-    public Account getSampleAccounts(){
-        return accountService.createSampleAccount();
+    public List<Account> getAllAccounts() {
+        return accountService.getAllAccounts();
     }
 
+//    @GetMapping("/accounts/{id}")
+//    public String getAccountById(@PathVariable String id){
+//        return "Requested account ID: " + id;
+//    }
+
     @GetMapping("/accounts/{id}")
-    public String getAccountById(@PathVariable String id){
-        return "Requested account ID: " + id;
+    public Account getAccountById(@PathVariable Long id) {
+        return accountService.getAccountById(id);
     }
 
     @GetMapping("/accounts/{id}/summary")

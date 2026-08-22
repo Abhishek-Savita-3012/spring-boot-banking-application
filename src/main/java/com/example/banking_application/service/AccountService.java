@@ -1,5 +1,6 @@
 package com.example.banking_application.service;
 
+import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.model.AccountType;
 import com.example.banking_application.repository.AccountRepository;
@@ -16,23 +17,6 @@ public class AccountService {
         this.accountRepository = accountRepository;
     }
 
-    public Account createSampleAccount(){
-        Account account = new Account();
-        account.setAccountNumber("AC100001");
-        account.setAccountHolderName("Abhishek");
-        account.setAccountType(AccountType.SAVINGS);
-        account.setBalance(10000.00);
-        account.setEmail("abc@gmail.com");
-
-        return account;
-    }
-
-    public String getSummary(){
-        Account account = createSampleAccount();
-        return "Account " + account.getAccountNumber() + " belongs to " + account.getAccountHolderName()
-                + " and has a balance of " + account.getBalance();
-    }
-
     public Account createAccount(Account account){
         return accountRepository.save(account);
     }
@@ -42,6 +26,51 @@ public class AccountService {
     }
 
     public Account getAccountById(Long id) {
-        return accountRepository.findById(id).orElse(null);
+        return accountRepository.findById(id)
+                .orElseThrow(() ->
+                    new AccountNotFoundException("Account with ID " + id + " not found")
+                );
+    }
+
+    public Account updateAccount(Long id, Account updatedAccount) {
+
+        Account existingAccount = accountRepository.findById(id)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account with ID " + id + " not found"
+                        )
+                );
+
+        existingAccount.setAccountNumber(
+                updatedAccount.getAccountNumber()
+        );
+
+        existingAccount.setAccountHolderName(
+                updatedAccount.getAccountHolderName()
+        );
+
+        existingAccount.setAccountType(
+                updatedAccount.getAccountType()
+        );
+
+        existingAccount.setBalance(
+                updatedAccount.getBalance()
+        );
+
+        existingAccount.setEmail(
+                updatedAccount.getEmail()
+        );
+
+        return accountRepository.save(existingAccount);
+    }
+
+    public void deleteAccount(Long id) {
+
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() ->
+                        new AccountNotFoundException("Account with ID " + id + " not found")
+                );
+
+        accountRepository.delete(account);
     }
 }

@@ -2,9 +2,10 @@ package com.example.banking_application.service;
 
 import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.model.Account;
-import com.example.banking_application.model.AccountType;
 import com.example.banking_application.repository.AccountRepository;
 import org.springframework.stereotype.Service;
+import com.example.banking_application.dto.AccountRequest;
+import com.example.banking_application.dto.AccountResponse;
 
 import java.util.List;
 
@@ -17,8 +18,31 @@ public class AccountService {
         this.accountRepository = accountRepository;
     }
 
-    public Account createAccount(Account account){
-        return accountRepository.save(account);
+    private AccountResponse convertToResponse(Account account) {
+
+        return new AccountResponse(
+                account.getId(),
+                account.getAccountNumber(),
+                account.getAccountHolderName(),
+                account.getAccountType(),
+                account.getBalance(),
+                account.getEmail()
+        );
+    }
+
+    public AccountResponse createAccount(AccountRequest request) {
+
+        Account account = new Account();
+
+        account.setAccountNumber(request.getAccountNumber());
+        account.setAccountHolderName(request.getAccountHolderName());
+        account.setAccountType(request.getAccountType());
+        account.setBalance(request.getBalance());
+        account.setEmail(request.getEmail());
+
+        Account savedAccount = accountRepository.save(account);
+
+        return convertToResponse(savedAccount);
     }
 
     public List<Account> getAllAccounts() {
@@ -32,7 +56,7 @@ public class AccountService {
                 );
     }
 
-    public Account updateAccount(Long id, Account updatedAccount) {
+    public AccountResponse updateAccount(Long id, AccountRequest request) {
 
         Account existingAccount = accountRepository.findById(id)
                 .orElseThrow(() ->
@@ -42,26 +66,28 @@ public class AccountService {
                 );
 
         existingAccount.setAccountNumber(
-                updatedAccount.getAccountNumber()
+                request.getAccountNumber()
         );
 
         existingAccount.setAccountHolderName(
-                updatedAccount.getAccountHolderName()
+                request.getAccountHolderName()
         );
 
         existingAccount.setAccountType(
-                updatedAccount.getAccountType()
+                request.getAccountType()
         );
 
         existingAccount.setBalance(
-                updatedAccount.getBalance()
+                request.getBalance()
         );
 
         existingAccount.setEmail(
-                updatedAccount.getEmail()
+                request.getEmail()
         );
 
-        return accountRepository.save(existingAccount);
+        Account savedAccount = accountRepository.save(existingAccount);
+
+        return convertToResponse(savedAccount);
     }
 
     public void deleteAccount(Long id) {

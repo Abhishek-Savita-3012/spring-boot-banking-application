@@ -1,7 +1,10 @@
 package com.example.banking_application.controller;
 
+import com.example.banking_application.dto.AccountRequest;
+import com.example.banking_application.dto.AccountResponse;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.service.AccountService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,18 +30,13 @@ public class BankingController {
     }
 
     @PostMapping("/accounts")
-    public Account createAccount(@RequestBody Account account){
-        return accountService.createAccount(account);
-    }
-
-    @PostMapping("/accounts/test")
-    public Account createAccountTest(@RequestBody Account account){
-        return accountService.createAccount(account);
+    public AccountResponse createAccount(@Valid @RequestBody AccountRequest request) {
+        return accountService.createAccount(request);
     }
 
     @PutMapping("/accounts/{id}")
-    public Account updateAccount(@PathVariable Long id, @RequestBody Account account){
-        return accountService.updateAccount(id, account);
+    public AccountResponse updateAccount(@PathVariable Long id, @Valid @RequestBody AccountRequest request) {
+        return accountService.updateAccount(id, request);
     }
 
     @DeleteMapping("/accounts/{id}")

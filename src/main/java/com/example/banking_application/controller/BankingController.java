@@ -2,6 +2,7 @@ package com.example.banking_application.controller;
 
 import com.example.banking_application.dto.AccountRequest;
 import com.example.banking_application.dto.AccountResponse;
+import com.example.banking_application.dto.TransactionRequest;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
@@ -44,5 +45,16 @@ public class BankingController {
         accountService.deleteAccount(id);
 
         return "Account with ID " + id + " deleted successfully";
+    }
+
+    @PostMapping("/accounts/{id}/deposit")
+    public AccountResponse deposit(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
+        return accountService.deposit(id, request);
+    }
+
+    @PostMapping("/accounts/{id}/withdraw")
+    public AccountResponse withdraw(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
+
+        return accountService.withdraw(id, request);
     }
 }

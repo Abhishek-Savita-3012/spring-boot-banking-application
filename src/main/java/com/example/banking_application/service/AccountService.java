@@ -1,11 +1,20 @@
 package com.example.banking_application.service;
 
 import com.example.banking_application.exception.AccountNotFoundException;
+import com.example.banking_application.exception.InsufficientBalanceException;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.repository.AccountRepository;
+import com.example.banking_application.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import com.example.banking_application.dto.AccountRequest;
 import com.example.banking_application.dto.AccountResponse;
+import com.example.banking_application.dto.TransactionRequest;
+import com.example.banking_application.model.Transaction;
+import com.example.banking_application.model.TransactionType;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -13,9 +22,11 @@ import java.util.List;
 public class AccountService {
 
     private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
 
-    public AccountService(AccountRepository accountRepository) {
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
         this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
     }
 
     private AccountResponse convertToResponse(Account account) {
@@ -98,5 +109,67 @@ public class AccountService {
                 );
 
         accountRepository.delete(account);
+    }
+
+    @Transactional
+    public AccountResponse deposit(Long accountId, TransactionRequest request) {
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found with id: " + accountId
+                        )
+                );
+
+        BigDecimal newBalance = account.getBalance().add(request.getAmount());
+
+        account.setBalance(newBalance);
+
+        accountRepository.save(account);
+
+        Transaction transaction = new Transaction();
+
+        transaction.setAccount(account);
+        transaction.setTransactionType(TransactionType.DEPOSIT);
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionDate(LocalDateTime.now());
+
+        transactionRepository.save(transaction);
+
+        return convertToResponse(account);
+    }
+
+    @Transactional
+    public AccountResponse withdraw(Long accountId, TransactionRequest request) {
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found with id: " + accountId
+                        )
+                );
+
+        if (account.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new InsufficientBalanceException(
+                    "Insufficient balance"
+            );
+        }
+
+        BigDecimal newBalance = account.getBalance().subtract(request.getAmount());
+
+        account.setBalance(newBalance);
+
+        accountRepository.save(account);
+
+        Transaction transaction = new Transaction();
+
+        transaction.setAccount(account);
+        transaction.setTransactionType(TransactionType.WITHDRAWAL);
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionDate(LocalDateTime.now());
+
+        transactionRepository.save(transaction);
+
+        return convertToResponse(account);
     }
 }

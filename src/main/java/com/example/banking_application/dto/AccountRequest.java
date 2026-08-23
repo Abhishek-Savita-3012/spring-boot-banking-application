@@ -1,11 +1,9 @@
 package com.example.banking_application.dto;
 
 import com.example.banking_application.model.AccountType;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
 
 public class AccountRequest {
 
@@ -20,8 +18,9 @@ public class AccountRequest {
     @NotNull(message = "Account type is required")
     private AccountType accountType;
 
-    @Positive(message = "Balance must be greater than zero")
-    private double balance;
+    @NotNull(message = "Balance is required")
+    @DecimalMin(value = "0.01", message = "Balance must be at least 0.01")
+    private BigDecimal balance;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Please provide a valid email address")
@@ -55,11 +54,11 @@ public class AccountRequest {
         this.accountType = accountType;
     }
 
-    public double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 
-    public void setBalance(double balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 

@@ -2,6 +2,8 @@ package com.example.banking_application.model;
 
 import jakarta.persistence.*;
 
+import java.math.BigDecimal;
+
 @Entity
 public class Account {
 
@@ -15,7 +17,9 @@ public class Account {
     @Enumerated(EnumType.STRING)
     private AccountType accountType;
 
-    private double balance;
+    @Column(precision = 15, scale = 2)
+    private BigDecimal balance;
+
     private String email;
 
     public Account() {
@@ -55,11 +59,11 @@ public class Account {
         return accountType;
     }
 
-    public void setBalance(double balance) {
+    public void setBalance(BigDecimal balance) {
         this.balance = balance;
     }
 
-    public double getBalance() {
+    public BigDecimal getBalance() {
         return balance;
     }
 

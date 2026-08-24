@@ -1,12 +1,10 @@
 package com.example.banking_application.controller;
 
-import com.example.banking_application.dto.AccountRequest;
-import com.example.banking_application.dto.AccountResponse;
-import com.example.banking_application.dto.TransactionRequest;
-import com.example.banking_application.dto.TransactionResponse;
+import com.example.banking_application.dto.*;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -62,5 +60,11 @@ public class BankingController {
     @GetMapping("/accounts/{id}/transactions")
     public List<TransactionResponse> getTransactionHistory(@PathVariable Long id) {
         return accountService.getTransactionHistory(id);
+    }
+
+    @PostMapping("/accounts/{id}/transfer")
+    public ResponseEntity<String> transfer(@PathVariable Long id, @Valid @RequestBody TransferRequest request) {
+        accountService.transfer(id, request);
+        return ResponseEntity.ok("Transfer completed successfully");
     }
 }

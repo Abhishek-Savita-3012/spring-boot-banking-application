@@ -57,4 +57,19 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorResponse);
     }
+
+    @ExceptionHandler(InvalidTransferException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTransfer(InvalidTransferException ex) {
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                400,
+                "Sender and receiver accounts cannot be the same",
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
 }

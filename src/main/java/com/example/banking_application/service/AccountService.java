@@ -13,6 +13,9 @@ import com.example.banking_application.dto.TransactionRequest;
 import com.example.banking_application.model.Transaction;
 import com.example.banking_application.model.TransactionType;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.banking_application.dto.TransferRequest;
+import com.example.banking_application.exception.InvalidTransferException;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -200,5 +203,60 @@ public class AccountService {
         return transactions.stream()
                 .map(this::convertTransactionToResponse)
                 .toList();
+    }
+
+    @Transactional
+    public void transfer(Long senderId, TransferRequest request) {
+
+        Account sender = accountRepository.findById(senderId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Sender account not found with id: " + senderId
+                        )
+                );
+
+        Account receiver = accountRepository.findById(request.getReceiverAccountId())
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Receiver account not found with id: "
+                                + request.getReceiverAccountId()
+                )
+        );
+
+        if (sender.getId().equals(receiver.getId())) {
+            throw new InvalidTransferException(
+                    "Sender and receiver accounts cannot be the same"
+            );
+        }
+
+        if (sender.getBalance().compareTo(request.getAmount()) < 0) {
+            throw new InsufficientBalanceException(
+                    "Insufficient balance"
+            );
+        }
+
+        sender.setBalance(sender.getBalance().subtract(request.getAmount()));
+
+        receiver.setBalance(receiver.getBalance().add(request.getAmount()));
+
+        Transaction senderTransaction = new Transaction();
+
+        senderTransaction.setAccount(sender);
+        senderTransaction.setTransactionType(TransactionType.WITHDRAWAL);
+        senderTransaction.setAmount(request.getAmount());
+        senderTransaction.setTransactionDate(LocalDateTime.now());
+
+        Transaction receiverTransaction = new Transaction();
+
+        receiverTransaction.setAccount(receiver);
+        receiverTransaction.setTransactionType(TransactionType.DEPOSIT);
+        receiverTransaction.setAmount(request.getAmount());
+        receiverTransaction.setTransactionDate(LocalDateTime.now());
+
+        accountRepository.save(sender);
+        accountRepository.save(receiver);
+
+        transactionRepository.save(senderTransaction);
+        transactionRepository.save(receiverTransaction);
     }
 }

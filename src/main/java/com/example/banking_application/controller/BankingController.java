@@ -3,6 +3,7 @@ package com.example.banking_application.controller;
 import com.example.banking_application.dto.AccountRequest;
 import com.example.banking_application.dto.AccountResponse;
 import com.example.banking_application.dto.TransactionRequest;
+import com.example.banking_application.dto.TransactionResponse;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public class BankingController {
     }
 
     @GetMapping("/accounts")
-    public List<Account> getAllAccounts() {
+    public List<AccountResponse> getAllAccounts() {
         return accountService.getAllAccounts();
     }
 
@@ -56,5 +57,10 @@ public class BankingController {
     public AccountResponse withdraw(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
 
         return accountService.withdraw(id, request);
+    }
+
+    @GetMapping("/accounts/{id}/transactions")
+    public List<TransactionResponse> getTransactionHistory(@PathVariable Long id) {
+        return accountService.getTransactionHistory(id);
     }
 }

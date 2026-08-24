@@ -1,5 +1,6 @@
 package com.example.banking_application.service;
 
+import com.example.banking_application.dto.TransactionResponse;
 import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.exception.InsufficientBalanceException;
 import com.example.banking_application.model.Account;
@@ -56,8 +57,12 @@ public class AccountService {
         return convertToResponse(savedAccount);
     }
 
-    public List<Account> getAllAccounts() {
-        return accountRepository.findAll();
+    public List<AccountResponse> getAllAccounts() {
+
+        return accountRepository.findAll()
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
     }
 
     public Account getAccountById(Long id) {
@@ -171,5 +176,29 @@ public class AccountService {
         transactionRepository.save(transaction);
 
         return convertToResponse(account);
+    }
+
+    private TransactionResponse convertTransactionToResponse(Transaction transaction) {
+        return new TransactionResponse(
+                transaction.getId(),
+                transaction.getTransactionType(),
+                transaction.getAmount(),
+                transaction.getTransactionDate()
+        );
+    }
+
+    public List<TransactionResponse> getTransactionHistory(Long accountId) {
+
+        accountRepository.findById(accountId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException("Account not found with id: " + accountId)
+                );
+
+        List<Transaction> transactions =
+                transactionRepository.findByAccountIdOrderByTransactionDateDesc(accountId);
+
+        return transactions.stream()
+                .map(this::convertTransactionToResponse)
+                .toList();
     }
 }

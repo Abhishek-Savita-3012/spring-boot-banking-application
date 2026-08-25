@@ -2,8 +2,12 @@ package com.example.banking_application.controller;
 
 import com.example.banking_application.dto.*;
 import com.example.banking_application.model.Account;
+import com.example.banking_application.model.TransactionType;
 import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,9 +61,30 @@ public class BankingController {
         return accountService.withdraw(id, request);
     }
 
+//    @GetMapping("/accounts/{id}/transactions")
+//    public List<TransactionResponse> getTransactionHistory(
+//            @PathVariable Long id,
+//            @RequestParam(required = false) TransactionType type) {
+//
+//        return accountService.getTransactionHistory(id, type);
+//    }
+
     @GetMapping("/accounts/{id}/transactions")
-    public List<TransactionResponse> getTransactionHistory(@PathVariable Long id) {
-        return accountService.getTransactionHistory(id);
+    public TransactionPageResponse getTransactionHistory(
+            @PathVariable Long id,
+            @RequestParam(required = false) TransactionType type,
+            @PageableDefault(
+                    size = 10,
+                    sort = "transactionDate",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable) {
+
+        return accountService.getTransactionHistory(
+                id,
+                type,
+                pageable
+        );
     }
 
     @PostMapping("/accounts/{id}/transfer")

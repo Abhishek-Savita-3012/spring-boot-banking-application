@@ -1,10 +1,21 @@
 package com.example.banking_application.repository;
 
 import com.example.banking_application.model.Transaction;
+import com.example.banking_application.model.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    List<Transaction> findByAccountIdOrderByTransactionDateDesc(Long accountId);
+    Page<Transaction> findByAccountId(
+            Long accountId,
+            Pageable pageable
+    );
+
+    Page<Transaction> findByAccountIdAndTransactionType(
+            Long accountId,
+            TransactionType transactionType,
+            Pageable pageable
+    );
 }

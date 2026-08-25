@@ -1,20 +1,21 @@
 package com.example.banking_application.service;
 
-import com.example.banking_application.dto.TransactionResponse;
+import com.example.banking_application.dto.*;
 import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.exception.InsufficientBalanceException;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.repository.AccountRepository;
 import com.example.banking_application.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
-import com.example.banking_application.dto.AccountRequest;
-import com.example.banking_application.dto.AccountResponse;
-import com.example.banking_application.dto.TransactionRequest;
 import com.example.banking_application.model.Transaction;
 import com.example.banking_application.model.TransactionType;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.banking_application.dto.TransferRequest;
 import com.example.banking_application.exception.InvalidTransferException;
+import com.example.banking_application.dto.TransactionPageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 
 import java.math.BigDecimal;
@@ -190,20 +191,35 @@ public class AccountService {
         );
     }
 
-    public List<TransactionResponse> getTransactionHistory(Long accountId) {
-
-        accountRepository.findById(accountId)
-                .orElseThrow(() ->
-                        new AccountNotFoundException("Account not found with id: " + accountId)
-                );
-
-        List<Transaction> transactions =
-                transactionRepository.findByAccountIdOrderByTransactionDateDesc(accountId);
-
-        return transactions.stream()
-                .map(this::convertTransactionToResponse)
-                .toList();
-    }
+//    public List<TransactionResponse> getTransactionHistory(Long accountId, TransactionType type) {
+//
+//        accountRepository.findById(accountId)
+//                .orElseThrow(() ->
+//                        new AccountNotFoundException(
+//                                "Account not found with id: " + accountId
+//                        )
+//                );
+//
+//        List<Transaction> transactions;
+//
+//        if (type == null) {
+//            transactions = transactionRepository
+//                    .findByAccountIdOrderByTransactionDateDesc(
+//                            accountId
+//                    );
+//
+//        } else {
+//            transactions = transactionRepository
+//                    .findByAccountIdAndTransactionTypeOrderByTransactionDateDesc(
+//                            accountId,
+//                            type
+//                    );
+//        }
+//
+//        return transactions.stream()
+//                .map(this::convertTransactionToResponse)
+//                .toList();
+//    }
 
     @Transactional
     public void transfer(Long senderId, TransferRequest request) {
@@ -258,5 +274,51 @@ public class AccountService {
 
         transactionRepository.save(senderTransaction);
         transactionRepository.save(receiverTransaction);
+    }
+
+    public TransactionPageResponse getTransactionHistory(
+            Long accountId,
+            TransactionType type,
+            Pageable pageable) {
+
+        accountRepository.findById(accountId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found with id: " + accountId
+                        )
+                );
+
+        Page<Transaction> transactionPage;
+
+        if (type == null) {
+
+            transactionPage = transactionRepository
+                    .findByAccountId(accountId, pageable);
+
+        } else {
+
+            transactionPage = transactionRepository
+                    .findByAccountIdAndTransactionType(
+                            accountId,
+                            type,
+                            pageable
+                    );
+        }
+
+        List<TransactionResponse> transactions =
+                transactionPage.getContent()
+                        .stream()
+                        .map(this::convertTransactionToResponse)
+                        .toList();
+
+        return new TransactionPageResponse(
+                transactions,
+                transactionPage.getNumber(),
+                transactionPage.getSize(),
+                transactionPage.getTotalElements(),
+                transactionPage.getTotalPages(),
+                transactionPage.isFirst(),
+                transactionPage.isLast()
+        );
     }
 }

@@ -69,11 +69,16 @@ public class AccountService {
                 .toList();
     }
 
-    public Account getAccountById(Long id) {
-        return accountRepository.findById(id)
+    public AccountResponse getAccountById(Long id) {
+
+        Account account = accountRepository.findById(id)
                 .orElseThrow(() ->
-                    new AccountNotFoundException("Account with ID " + id + " not found")
+                        new AccountNotFoundException(
+                                "Account with ID " + id + " not found"
+                        )
                 );
+
+        return convertToResponse(account);
     }
 
     public AccountResponse updateAccount(Long id, AccountRequest request) {

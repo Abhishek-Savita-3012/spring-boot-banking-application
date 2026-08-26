@@ -134,7 +134,7 @@ public class AccountService {
     @Transactional
     public AccountResponse deposit(Long accountId, TransactionRequest request) {
 
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Account not found with id: " + accountId
@@ -162,7 +162,7 @@ public class AccountService {
     @Transactional
     public AccountResponse withdraw(Long accountId, TransactionRequest request) {
 
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Account not found with id: " + accountId
@@ -235,14 +235,14 @@ public class AccountService {
     @Transactional
     public void transfer(Long senderId, TransferRequest request) {
 
-        Account sender = accountRepository.findById(senderId)
+        Account sender = accountRepository.findByIdForUpdate(senderId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Sender account not found with id: " + senderId
                         )
                 );
 
-        Account receiver = accountRepository.findById(request.getReceiverAccountId())
+        Account receiver = accountRepository.findByIdForUpdate(request.getReceiverAccountId())
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Receiver account not found with id: "

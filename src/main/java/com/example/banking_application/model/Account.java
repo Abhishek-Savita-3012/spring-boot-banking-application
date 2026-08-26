@@ -3,6 +3,7 @@ package com.example.banking_application.model;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Entity
 public class Account {
@@ -27,8 +28,9 @@ public class Account {
     @Column(nullable = false)
     private String email;
 
-    public Account() {
-    }
+    @OneToMany(mappedBy = "account")
+    private List<Transaction> transactions;
+
 
     //getters and setters
 
@@ -78,5 +80,13 @@ public class Account {
 
     public String getEmail() {
         return email;
+    }
+
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    public void setTransactions(List<Transaction> transactions) {
+        this.transactions = transactions;
     }
 }

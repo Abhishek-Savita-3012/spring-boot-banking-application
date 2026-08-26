@@ -10,37 +10,62 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccountNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleAccountNotFoundException(AccountNotFoundException exception) {
-        return new ErrorResponse(
+    public ResponseEntity<ErrorResponse> handleAccountNotFound(AccountNotFoundException ex) {
+
+        ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
                 404,
-                "Not Found",
-                exception.getMessage()
+                "Account not found",
+                ex.getMessage()
         );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationErrors(MethodArgumentNotValidException exception) {
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
 
-        Map<String, String> errors = new HashMap<>();
-
-        exception.getBindingResult()
+        String message = ex.getBindingResult()
                 .getFieldErrors()
-                .forEach(error ->
-                        errors.put(
-                                error.getField(),
-                                error.getDefaultMessage()
-                        )
-                );
+                .stream()
+                .map(error ->
+                        error.getField()
+                                + ": "
+                                + error.getDefaultMessage()
+                )
+                .collect(Collectors.joining(", "));
 
-        return errors;
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                400,
+                "Validation error",
+                message
+        );
+
+        return ResponseEntity
+                .badRequest()
+                .body(response);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+
+        ErrorResponse error = new ErrorResponse(
+                500,
+                "An unexpected error occurred"
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(error);
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)

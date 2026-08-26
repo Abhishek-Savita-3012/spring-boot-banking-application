@@ -72,4 +72,19 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errorResponse);
     }
+
+    @ExceptionHandler(DuplicateAccountException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateAccount(DuplicateAccountException ex) {
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                409,
+                "Account number already exists",
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
 }

@@ -19,7 +19,7 @@ public class AccountRequest {
     private AccountType accountType;
 
     @NotNull(message = "Balance is required")
-    @DecimalMin(value = "0.01", message = "Balance must be at least 0.01")
+    @PositiveOrZero(message = "Balance cannot be negative")
     private BigDecimal balance;
 
     @NotBlank(message = "Email is required")

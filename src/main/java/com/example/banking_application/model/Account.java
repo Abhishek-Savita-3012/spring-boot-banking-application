@@ -11,15 +11,20 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String accountNumber;
+
+    @Column(nullable = false)
     private String accountHolderName;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private AccountType accountType;
 
-    @Column(precision = 15, scale = 2)
+    @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal balance;
 
+    @Column(nullable = false)
     private String email;
 
     public Account() {

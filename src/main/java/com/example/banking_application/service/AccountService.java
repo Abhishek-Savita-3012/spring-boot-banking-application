@@ -2,6 +2,7 @@ package com.example.banking_application.service;
 
 import com.example.banking_application.dto.*;
 import com.example.banking_application.exception.AccountNotFoundException;
+import com.example.banking_application.exception.DuplicateAccountException;
 import com.example.banking_application.exception.InsufficientBalanceException;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.repository.AccountRepository;
@@ -20,8 +21,6 @@ import java.util.List;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-import java.util.List;
 
 @Service
 public class AccountService {
@@ -47,6 +46,13 @@ public class AccountService {
     }
 
     public AccountResponse createAccount(AccountRequest request) {
+
+        if (accountRepository.existsByAccountNumber(request.getAccountNumber())) {
+            throw new DuplicateAccountException(
+                    "Account number already exists: "
+                            + request.getAccountNumber()
+            );
+        }
 
         Account account = new Account();
 

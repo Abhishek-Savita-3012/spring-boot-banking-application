@@ -58,14 +58,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
 
-        ErrorResponse error = new ErrorResponse(
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
                 500,
+                "Internal Server Error",
                 "An unexpected error occurred"
         );
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+                .body(response);
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
@@ -89,7 +91,7 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 400,
-                "Sender and receiver accounts cannot be the same",
+                "Invalid Transfer",
                 ex.getMessage()
         );
 
@@ -110,6 +112,21 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .body(response);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateAccount(UserNotFoundException ex) {
+
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                404,
+                "User not found",
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
                 .body(response);
     }
 }

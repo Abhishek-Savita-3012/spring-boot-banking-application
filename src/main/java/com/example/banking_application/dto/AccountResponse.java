@@ -8,10 +8,9 @@ public class AccountResponse {
 
     private Long id;
     private String accountNumber;
-    private String accountHolderName;
     private AccountType accountType;
     private BigDecimal balance;
-    private String email;
+    private Long userId;
 
     public AccountResponse() {
     }
@@ -19,17 +18,15 @@ public class AccountResponse {
     public AccountResponse(
             Long id,
             String accountNumber,
-            String accountHolderName,
             AccountType accountType,
             BigDecimal balance,
-            String email) {
+            Long userId) {
 
         this.id = id;
         this.accountNumber = accountNumber;
-        this.accountHolderName = accountHolderName;
         this.accountType = accountType;
         this.balance = balance;
-        this.email = email;
+        this.userId = userId;
     }
 
     // Getters and setters
@@ -49,14 +46,6 @@ public class AccountResponse {
         this.accountNumber = accountNumber;
     }
 
-    public String getAccountHolderName() {
-        return accountHolderName;
-    }
-
-    public void setAccountHolderName(String accountHolderName) {
-        this.accountHolderName = accountHolderName;
-    }
-
     public AccountType getAccountType() {
         return accountType;
     }
@@ -73,12 +62,11 @@ public class AccountResponse {
         this.balance = balance;
     }
 
-    public String getEmail() {
-        return email;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
-
 }

@@ -11,10 +11,6 @@ public class AccountRequest {
     @Size(min = 6, max = 20, message = "Account number must be between 6 and 20 characters")
     private String accountNumber;
 
-    @NotBlank(message = "Account holder name is required")
-    @Size(min = 2, max = 100, message = "Account holder name must be between 2 and 100 characters")
-    private String accountHolderName;
-
     @NotNull(message = "Account type is required")
     private AccountType accountType;
 
@@ -22,9 +18,7 @@ public class AccountRequest {
     @PositiveOrZero(message = "Balance cannot be negative")
     private BigDecimal balance;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Please provide a valid email address")
-    private String email;
+    private Long userId;
 
     public AccountRequest() {
     }
@@ -36,14 +30,6 @@ public class AccountRequest {
 
     public void setAccountNumber(String accountNumber) {
         this.accountNumber = accountNumber;
-    }
-
-    public String getAccountHolderName() {
-        return accountHolderName;
-    }
-
-    public void setAccountHolderName(String accountHolderName) {
-        this.accountHolderName = accountHolderName;
     }
 
     public AccountType getAccountType() {
@@ -62,11 +48,11 @@ public class AccountRequest {
         this.balance = balance;
     }
 
-    public String getEmail() {
-        return email;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

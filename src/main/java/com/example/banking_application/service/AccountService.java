@@ -1,17 +1,16 @@
 package com.example.banking_application.service;
 
 import com.example.banking_application.dto.*;
-import com.example.banking_application.exception.AccountNotFoundException;
-import com.example.banking_application.exception.DuplicateAccountException;
-import com.example.banking_application.exception.InsufficientBalanceException;
+import com.example.banking_application.exception.*;
 import com.example.banking_application.model.Account;
+import com.example.banking_application.model.User;
 import com.example.banking_application.repository.AccountRepository;
 import com.example.banking_application.repository.TransactionRepository;
+import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import com.example.banking_application.model.Transaction;
 import com.example.banking_application.model.TransactionType;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.banking_application.exception.InvalidTransferException;
 import com.example.banking_application.dto.TransactionPageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,10 +26,12 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final UserRepository userRepository;
 
-    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.userRepository = userRepository;
     }
 
     private AccountResponse convertToResponse(Account account) {
@@ -38,14 +39,20 @@ public class AccountService {
         return new AccountResponse(
                 account.getId(),
                 account.getAccountNumber(),
-                account.getAccountHolderName(),
                 account.getAccountType(),
                 account.getBalance(),
-                account.getEmail()
+                account.getUser().getId()
         );
     }
 
     public AccountResponse createAccount(AccountRequest request) {
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() ->
+                        new UserNotFoundException(
+                                "User with ID " + request.getUserId() + " not found"
+                        )
+                );
 
         if (accountRepository.existsByAccountNumber(request.getAccountNumber())) {
             throw new DuplicateAccountException(
@@ -57,10 +64,9 @@ public class AccountService {
         Account account = new Account();
 
         account.setAccountNumber(request.getAccountNumber());
-        account.setAccountHolderName(request.getAccountHolderName());
         account.setAccountType(request.getAccountType());
         account.setBalance(request.getBalance());
-        account.setEmail(request.getEmail());
+        account.setUser(user);
 
         Account savedAccount = accountRepository.save(account);
 
@@ -96,12 +102,15 @@ public class AccountService {
                         )
                 );
 
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() ->
+                        new UserNotFoundException(
+                                "User with ID " + request.getUserId() + " not found"
+                        )
+                );
+
         existingAccount.setAccountNumber(
                 request.getAccountNumber()
-        );
-
-        existingAccount.setAccountHolderName(
-                request.getAccountHolderName()
         );
 
         existingAccount.setAccountType(
@@ -112,9 +121,7 @@ public class AccountService {
                 request.getBalance()
         );
 
-        existingAccount.setEmail(
-                request.getEmail()
-        );
+        existingAccount.setUser(user);
 
         Account savedAccount = accountRepository.save(existingAccount);
 
@@ -171,7 +178,7 @@ public class AccountService {
 
         if (account.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException(
-                    "Insufficient balance"
+                    "Insufficient balance in the account"
             );
         }
 
@@ -245,8 +252,7 @@ public class AccountService {
         Account receiver = accountRepository.findByIdForUpdate(request.getReceiverAccountId())
                 .orElseThrow(() ->
                         new AccountNotFoundException(
-                                "Receiver account not found with id: "
-                                + request.getReceiverAccountId()
+                                "Receiver account not found with id: " + request.getReceiverAccountId()
                 )
         );
 
@@ -258,7 +264,7 @@ public class AccountService {
 
         if (sender.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException(
-                    "Insufficient balance"
+                    "Insufficient balance in the account"
             );
         }
 

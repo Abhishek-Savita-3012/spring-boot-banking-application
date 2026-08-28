@@ -1,5 +1,7 @@
 package com.example.banking_application.service;
 
+import com.example.banking_application.dto.UserRequest;
+import com.example.banking_application.dto.UserResponse;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -13,7 +15,25 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public User createUser(User user) {
-        return userRepository.save(user);
+    private UserResponse convertToResponse(User user) {
+
+        return new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail()
+        );
+    }
+
+    public UserResponse createUser(UserRequest request) {
+
+        User user = new User();
+
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+
+        User savedUser = userRepository.save(user);
+
+        return convertToResponse(savedUser);
     }
 }

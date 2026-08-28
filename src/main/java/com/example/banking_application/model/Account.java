@@ -16,17 +16,11 @@ public class Account {
     private String accountNumber;
 
     @Column(nullable = false)
-    private String accountHolderName;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private AccountType accountType;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal balance;
-
-    @Column(nullable = false)
-    private String email;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -54,14 +48,6 @@ public class Account {
         return accountNumber;
     }
 
-    public void setAccountHolderName(String accountHolderName) {
-        this.accountHolderName = accountHolderName;
-    }
-
-    public String getAccountHolderName() {
-        return accountHolderName;
-    }
-
     public void setAccountType(AccountType accountType) {
         this.accountType = accountType;
     }
@@ -76,14 +62,6 @@ public class Account {
 
     public BigDecimal getBalance() {
         return balance;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     public List<Transaction> getTransactions() {

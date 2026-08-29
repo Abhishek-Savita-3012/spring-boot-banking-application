@@ -1,13 +1,8 @@
 package com.example.banking_application.controller;
 
 import com.example.banking_application.dto.*;
-import com.example.banking_application.model.Account;
-import com.example.banking_application.model.TransactionType;
 import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -94,74 +89,5 @@ public class BankingController {
         accountService.deleteAccount(id);
 
         return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/accounts/{id}/deposit")
-    public ResponseEntity<AccountResponse> deposit(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
-        AccountResponse response = accountService.deposit(id, request);
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/accounts/{id}/withdraw")
-    public ResponseEntity<AccountResponse> withdraw(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
-
-        AccountResponse response = accountService.withdraw(id, request);
-
-        return ResponseEntity.ok(response);
-    }
-
-//    @GetMapping("/accounts/{id}/transactions")
-//    public List<TransactionResponse> getTransactionHistory(
-//            @PathVariable Long id,
-//            @RequestParam(required = false) TransactionType type) {
-//
-//        return accountService.getTransactionHistory(id, type);
-//    }
-
-//    @GetMapping("/accounts/{id}/transactions")
-//    public TransactionPageResponse getTransactionHistory(
-//            @PathVariable Long id,
-//            @RequestParam(required = false) TransactionType type,
-//            @PageableDefault(
-//                    size = 10,
-//                    sort = "transactionDate",
-//                    direction = Sort.Direction.DESC
-//            )
-//            Pageable pageable) {
-//
-//        return accountService.getTransactionHistory(
-//                id,
-//                type,
-//                pageable
-//        );
-//    }
-
-    @PostMapping("/accounts/{id}/transfer")
-    public ResponseEntity<String> transfer(@PathVariable Long id, @Valid @RequestBody TransferRequest request) {
-        accountService.transfer(id, request);
-        return ResponseEntity.ok("Transfer completed successfully");
-    }
-
-    @GetMapping("/accounts/{id}/transactions")
-    public ResponseEntity<TransactionPageResponse> getTransactionHistory(
-            @PathVariable Long id,
-            @RequestParam(required = false)
-            TransactionType type,
-            @PageableDefault(
-                    size = 10,
-                    sort = "transactionDate",
-                    direction = Sort.Direction.DESC
-            )
-            Pageable pageable) {
-
-        TransactionPageResponse response =
-                accountService.getTransactionHistory(
-                        id,
-                        type,
-                        pageable
-                );
-
-        return ResponseEntity.ok(response);
     }
 }

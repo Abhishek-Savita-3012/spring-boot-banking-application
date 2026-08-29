@@ -8,26 +8,17 @@ import com.example.banking_application.repository.AccountRepository;
 import com.example.banking_application.repository.TransactionRepository;
 import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
-import com.example.banking_application.model.Transaction;
-import com.example.banking_application.model.TransactionType;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Service
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
 
-    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository, UserRepository userRepository) {
+    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
         this.accountRepository = accountRepository;
-        this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
     }
 

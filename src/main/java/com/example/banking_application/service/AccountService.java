@@ -3,11 +3,13 @@ package com.example.banking_application.service;
 import com.example.banking_application.dto.*;
 import com.example.banking_application.exception.*;
 import com.example.banking_application.model.Account;
+import com.example.banking_application.model.Role;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.AccountRepository;
-import com.example.banking_application.repository.TransactionRepository;
 import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.example.banking_application.security.AccountAuthorizationService;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -16,10 +18,12 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final AccountAuthorizationService accountAuthorizationService;
 
-    public AccountService(AccountRepository accountRepository, UserRepository userRepository) {
+    public AccountService(AccountRepository accountRepository, UserRepository userRepository, AccountAuthorizationService accountAuthorizationService) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.accountAuthorizationService = accountAuthorizationService;
     }
 
     private AccountResponse convertToResponse(Account account) {
@@ -35,14 +39,36 @@ public class AccountService {
 
     public AccountResponse createAccount(AccountRequest request) {
 
-        User user = userRepository.findById(request.getUserId())
+        User currentUser = accountAuthorizationService.getCurrentUser();
+
+        Long ownerId;
+
+        if (currentUser.getRole() == Role.ADMIN) {
+
+            ownerId = request.getUserId();
+
+        } else {
+
+            if (request.getUserId() != null && !request.getUserId().equals(currentUser.getId())) {
+
+                throw new AccessDeniedException(
+                        "You cannot create an account for another user"
+                );
+            }
+
+            ownerId = currentUser.getId();
+        }
+
+        User user = userRepository.findById(ownerId)
                 .orElseThrow(() ->
                         new UserNotFoundException(
-                                "User with ID " + request.getUserId() + " not found"
+                                "User not found with id: "
+                                        + ownerId
                         )
                 );
 
         if (accountRepository.existsByAccountNumber(request.getAccountNumber())) {
+
             throw new DuplicateAccountException(
                     "Account number already exists: "
                             + request.getAccountNumber()
@@ -77,6 +103,8 @@ public class AccountService {
                                 "Account with ID " + id + " not found"
                         )
                 );
+
+        accountAuthorizationService.checkAccountOwnership(account);
 
         return convertToResponse(account);
     }

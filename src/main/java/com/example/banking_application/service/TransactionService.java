@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.banking_application.security.AccountAuthorizationService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,10 +24,12 @@ public class TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final AccountAuthorizationService accountAuthorizationService;
 
-    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public TransactionService(AccountRepository accountRepository, TransactionRepository transactionRepository, AccountAuthorizationService accountAuthorizationService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.accountAuthorizationService = accountAuthorizationService;
     }
 
     private AccountResponse convertToResponse(Account account) {
@@ -49,6 +52,8 @@ public class TransactionService {
                                 "Account not found with id: " + accountId
                         )
                 );
+
+        accountAuthorizationService.checkAccountOwnership(account);
 
         BigDecimal newBalance = account.getBalance().add(request.getAmount());
 
@@ -77,6 +82,8 @@ public class TransactionService {
                                 "Account not found with id: " + accountId
                         )
                 );
+
+        accountAuthorizationService.checkAccountOwnership(account);
 
         if (account.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException(
@@ -120,6 +127,8 @@ public class TransactionService {
                                 "Sender account not found with id: " + senderId
                         )
                 );
+
+        accountAuthorizationService.checkAccountOwnership(sender);
 
         Account receiver = accountRepository.findByIdForUpdate(request.getReceiverAccountId())
                 .orElseThrow(() ->
@@ -170,12 +179,14 @@ public class TransactionService {
             TransactionType type,
             Pageable pageable) {
 
-        accountRepository.findById(accountId)
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Account not found with id: " + accountId
                         )
                 );
+
+        accountAuthorizationService.checkAccountOwnership(account);
 
         Page<Transaction> transactionPage;
 

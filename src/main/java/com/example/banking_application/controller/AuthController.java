@@ -5,6 +5,7 @@ import com.example.banking_application.dto.LoginResponse;
 import com.example.banking_application.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api")
@@ -24,6 +25,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/test")
     public ResponseEntity<String> adminTest() {
 

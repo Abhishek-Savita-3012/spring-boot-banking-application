@@ -2,11 +2,10 @@ package com.example.banking_application.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public class UserRequest {
 
-    @NotNull(message = "User must be given a name")
+    @NotBlank(message = "User must be given a name")
     private String name;
 
     @NotBlank(message = "Email is required")

@@ -4,6 +4,7 @@ import com.example.banking_application.dto.UserRequest;
 import com.example.banking_application.dto.UserResponse;
 import com.example.banking_application.model.User;
 import com.example.banking_application.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
 
         UserResponse response = userService.createUser(request);
 

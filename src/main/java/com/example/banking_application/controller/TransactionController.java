@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api")
@@ -22,6 +23,7 @@ public class TransactionController {
         this.transactionService = transactionService;
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/transactions/{id}/deposit")
     public ResponseEntity<AccountResponse> deposit(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
         AccountResponse response = transactionService.deposit(id, request);
@@ -29,6 +31,7 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/transactions/{id}/withdraw")
     public ResponseEntity<AccountResponse> withdraw(@PathVariable Long id, @Valid @RequestBody TransactionRequest request) {
 
@@ -37,12 +40,14 @@ public class TransactionController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/transactions/{id}/transfer")
     public ResponseEntity<String> transfer(@PathVariable Long id, @Valid @RequestBody TransferRequest request) {
         transactionService.transfer(id, request);
         return ResponseEntity.ok("Transfer completed successfully");
     }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/transactions/{id}/records")
     public ResponseEntity<TransactionPageResponse> getTransactionHistory(
             @PathVariable Long id,

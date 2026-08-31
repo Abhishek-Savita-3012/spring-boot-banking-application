@@ -3,6 +3,7 @@ package com.example.banking_application.controller;
 import com.example.banking_application.dto.LoginRequest;
 import com.example.banking_application.dto.LoginResponse;
 import com.example.banking_application.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +19,7 @@ public class AuthController {
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
 
         LoginResponse response = authService.login(request);
 

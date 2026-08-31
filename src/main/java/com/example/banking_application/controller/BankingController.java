@@ -5,6 +5,7 @@ import com.example.banking_application.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -24,6 +25,7 @@ public class BankingController {
 //        return accountService.getAllAccounts();
 //    }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/accounts")
     public ResponseEntity<List<AccountResponse>> getAllAccounts() {
 
@@ -37,6 +39,7 @@ public class BankingController {
 //        return accountService.getAccountById(id);
 //    }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/accounts/{id}")
     public ResponseEntity<AccountResponse> getAccountById(@PathVariable Long id) {
 
@@ -50,6 +53,7 @@ public class BankingController {
 //        return accountService.createAccount(request);
 //    }
 
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/accounts")
     public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody AccountRequest request) {
 
@@ -67,6 +71,7 @@ public class BankingController {
 //        return accountService.updateAccount(id, request);
 //    }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/accounts/{id}")
     public ResponseEntity<AccountResponse> updateAccount(@PathVariable Long id, @Valid @RequestBody AccountRequest request) {
 
@@ -83,6 +88,7 @@ public class BankingController {
 //        return "Account with ID " + id + " deleted successfully";
 //    }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/accounts/{id}")
     public ResponseEntity<Void> deleteAccount(@PathVariable Long id) {
 

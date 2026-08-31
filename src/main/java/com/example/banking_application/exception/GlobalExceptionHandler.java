@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
                 404,
-                "Account not found",
+                "Account Not Found",
                 ex.getMessage()
         );
 
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
                 400,
-                "Validation error",
+                "Validation Error",
                 message
         );
 
@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now(),
                 500,
                 "Internal Server Error",
-                "An unexpected error occurred"
+                "An Unexpected Error Occurred"
         );
 
         return ResponseEntity
@@ -106,7 +106,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
                 409,
-                "Account number already exists",
+                "Account Number Already Exists",
                 ex.getMessage()
         );
 
@@ -121,7 +121,7 @@ public class GlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(
                 LocalDateTime.now(),
                 404,
-                "User not found",
+                "User Not Found",
                 ex.getMessage()
         );
 

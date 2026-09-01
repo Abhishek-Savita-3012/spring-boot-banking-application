@@ -3,6 +3,7 @@ package com.example.banking_application.service;
 import com.example.banking_application.dto.*;
 import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.exception.InsufficientBalanceException;
+import com.example.banking_application.exception.InvalidAccountStateException;
 import com.example.banking_application.exception.InvalidTransferException;
 import com.example.banking_application.model.Account;
 import com.example.banking_application.model.AccountStatus;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.banking_application.security.AccountAuthorizationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,6 +36,8 @@ public class TransactionService {
         this.accountAuthorizationService = accountAuthorizationService;
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(TransactionService.class);
+
     private AccountResponse convertToResponse(Account account) {
 
         return new AccountResponse(
@@ -48,13 +53,13 @@ public class TransactionService {
     private void validateAccountForTransaction(Account account) {
 
         if (account.getStatus() == AccountStatus.BLOCKED) {
-            throw new InvalidTransferException(
+            throw new InvalidAccountStateException(
                     "Transactions are not allowed on a blocked account"
             );
         }
 
         if (account.getStatus() == AccountStatus.CLOSED) {
-            throw new InvalidTransferException(
+            throw new InvalidAccountStateException(
                     "Transactions are not allowed on a closed account"
             );
         }
@@ -88,6 +93,8 @@ public class TransactionService {
         transaction.setTransactionDate(LocalDateTime.now());
 
         transactionRepository.save(transaction);
+
+        logger.info("Deposit completed for accountId={}", accountId);
 
         return convertToResponse(account);
     }
@@ -127,6 +134,8 @@ public class TransactionService {
 
         transactionRepository.save(transaction);
 
+        logger.info("Withdrawal completed for accountId={}", accountId);
+
         return convertToResponse(account);
     }
 
@@ -142,30 +151,59 @@ public class TransactionService {
     @Transactional
     public void transfer(Long senderId, TransferRequest request) {
 
-        Account sender = accountRepository.findByIdForUpdate(senderId)
+        Long receiverId = request.getReceiverAccountId();
+
+        // Reject same-account transfer before taking database locks
+        if (senderId.equals(receiverId)) {
+            throw new InvalidTransferException(
+                    "Sender and receiver accounts cannot be the same"
+            );
+        }
+
+        // Load sender normally first for ownership authorization
+        Account senderForAuthorization = accountRepository.findById(senderId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
                                 "Sender account not found with id: " + senderId
                         )
                 );
 
-        accountAuthorizationService.checkAccountOwnership(sender);
+        accountAuthorizationService.checkAccountOwnership(
+                senderForAuthorization
+        );
 
-        Account receiver = accountRepository.findByIdForUpdate(request.getReceiverAccountId())
+        // Always lock accounts in deterministic ID order
+        Long firstAccountId = Math.min(senderId, receiverId);
+        Long secondAccountId = Math.max(senderId, receiverId);
+
+        Account firstAccount = accountRepository.findByIdForUpdate(firstAccountId)
                 .orElseThrow(() ->
                         new AccountNotFoundException(
-                                "Receiver account not found with id: " + request.getReceiverAccountId()
+                                "Account not found with id: " + firstAccountId
                         )
                 );
 
+        Account secondAccount = accountRepository.findByIdForUpdate(secondAccountId)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found with id: " + secondAccountId
+                        )
+                );
+
+        // Identify sender and receiver after locking
+        Account sender =
+                senderId.equals(firstAccountId)
+                        ? firstAccount
+                        : secondAccount;
+
+        Account receiver =
+                receiverId.equals(firstAccountId)
+                        ? firstAccount
+                        : secondAccount;
+
+        // Validate current account states after locks are acquired
         validateAccountForTransaction(sender);
         validateAccountForTransaction(receiver);
-
-        if (sender.getId().equals(receiver.getId())) {
-            throw new InvalidTransferException(
-                    "Sender and receiver accounts cannot be the same"
-            );
-        }
 
         if (sender.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException(
@@ -173,29 +211,52 @@ public class TransactionService {
             );
         }
 
-        sender.setBalance(sender.getBalance().subtract(request.getAmount()));
+        // Update balances
+        sender.setBalance(
+                sender.getBalance()
+                        .subtract(request.getAmount())
+        );
 
-        receiver.setBalance(receiver.getBalance().add(request.getAmount()));
+        receiver.setBalance(
+                receiver.getBalance()
+                        .add(request.getAmount())
+        );
 
+        // Create sender transaction record
         Transaction senderTransaction = new Transaction();
 
         senderTransaction.setAccount(sender);
-        senderTransaction.setTransactionType(TransactionType.WITHDRAWAL);
-        senderTransaction.setAmount(request.getAmount());
-        senderTransaction.setTransactionDate(LocalDateTime.now());
+        senderTransaction.setTransactionType(
+                TransactionType.TRANSFER_OUT
+        );
+        senderTransaction.setAmount(
+                request.getAmount()
+        );
+        senderTransaction.setTransactionDate(
+                LocalDateTime.now()
+        );
 
+        // Create receiver transaction record
         Transaction receiverTransaction = new Transaction();
 
         receiverTransaction.setAccount(receiver);
-        receiverTransaction.setTransactionType(TransactionType.DEPOSIT);
-        receiverTransaction.setAmount(request.getAmount());
-        receiverTransaction.setTransactionDate(LocalDateTime.now());
+        receiverTransaction.setTransactionType(
+                TransactionType.TRANSFER_IN
+        );
+        receiverTransaction.setAmount(
+                request.getAmount()
+        );
+        receiverTransaction.setTransactionDate(
+                LocalDateTime.now()
+        );
 
         accountRepository.save(sender);
         accountRepository.save(receiver);
 
         transactionRepository.save(senderTransaction);
         transactionRepository.save(receiverTransaction);
+
+        logger.info("Transfer completed from accountId={} to accountId={}", senderId, request.getReceiverAccountId());
     }
 
     public TransactionPageResponse getTransactionHistory(

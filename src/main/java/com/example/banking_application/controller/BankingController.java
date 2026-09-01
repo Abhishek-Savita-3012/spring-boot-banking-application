@@ -20,11 +20,6 @@ public class BankingController {
         this.accountService = accountService;
     }
 
-//    @GetMapping("/accounts")
-//    public List<AccountResponse> getAllAccounts() {
-//        return accountService.getAllAccounts();
-//    }
-
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/accounts")
     public ResponseEntity<List<AccountResponse>> getAllAccounts() {
@@ -34,11 +29,6 @@ public class BankingController {
         return ResponseEntity.ok(accounts);
     }
 
-//    @GetMapping("/accounts/{id}")
-//    public Account getAccountById(@PathVariable Long id) {
-//        return accountService.getAccountById(id);
-//    }
-
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @GetMapping("/accounts/{id}")
     public ResponseEntity<AccountResponse> getAccountById(@PathVariable Long id) {
@@ -47,11 +37,6 @@ public class BankingController {
 
         return ResponseEntity.ok(response);
     }
-
-//    @PostMapping("/accounts")
-//    public AccountResponse createAccount(@Valid @RequestBody AccountRequest request) {
-//        return accountService.createAccount(request);
-//    }
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @PostMapping("/accounts")
@@ -66,11 +51,6 @@ public class BankingController {
                 .body(response);
     }
 
-//    @PutMapping("/accounts/{id}")
-//    public AccountResponse updateAccount(@PathVariable Long id, @Valid @RequestBody AccountRequest request) {
-//        return accountService.updateAccount(id, request);
-//    }
-
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/accounts/{id}")
     public ResponseEntity<AccountResponse> updateAccount(@PathVariable Long id, @Valid @RequestBody AccountUpdateRequest request) {
@@ -78,22 +58,6 @@ public class BankingController {
         AccountResponse response = accountService.updateAccount(id, request);
 
         return ResponseEntity.ok(response);
-    }
-
-//    @DeleteMapping("/accounts/{id}")
-//    public String deleteAccount(@PathVariable Long id){
-//        accountService.deleteAccount(id);
-//
-//        return "Account with ID " + id + " deleted successfully";
-//    }
-
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/accounts/{id}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable Long id) {
-
-        accountService.deleteAccount(id);
-
-        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")

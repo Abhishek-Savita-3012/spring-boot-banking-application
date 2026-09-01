@@ -24,11 +24,6 @@ public class ErrorResponse {
         this.message = message;
     }
 
-//    public ErrorResponse(int status, String error) {
-//        this.status = status;
-//        this.error = error;
-//    }
-
     public LocalDateTime getTimestamp() {
         return timestamp;
     }

@@ -6,8 +6,11 @@ import com.example.banking_application.model.Account;
 import com.example.banking_application.model.AccountStatus;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.AccountRepository;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import com.example.banking_application.security.AccountAuthorizationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,6 +25,8 @@ public class AccountService {
         this.accountRepository = accountRepository;
         this.accountAuthorizationService = accountAuthorizationService;
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(AccountService.class);
 
     private AccountResponse convertToResponse(Account account) {
 
@@ -110,41 +115,34 @@ public class AccountService {
         return convertToResponse(savedAccount);
     }
 
-    public void deleteAccount(Long id) {
-
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() ->
-                        new AccountNotFoundException("Account with ID " + id + " not found")
-                );
-
-        accountRepository.delete(account);
-    }
-
+    @Transactional
     public AccountResponse updateAccountStatus(Long id, AccountStatusRequest request) {
 
-        Account account = accountRepository.findById(id)
-                .orElseThrow(() ->
-                        new AccountNotFoundException(
-                                "Account not found with id: " + id
-                        )
-                );
+        Account account = accountRepository.findByIdForUpdate(id)
+                                .orElseThrow(() ->
+                                        new AccountNotFoundException(
+                                                "Account with ID " + id + " not found"
+                                        )
+                                );
 
         if (account.getStatus() == AccountStatus.CLOSED) {
-            throw new InvalidTransferException(
+            throw new InvalidAccountStateException(
                     "A closed account cannot be reopened or modified"
             );
         }
 
         if (request.getStatus() == AccountStatus.CLOSED && account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
-            throw new InvalidTransferException(
+            throw new InvalidAccountStateException(
                     "Account balance must be zero before closing"
             );
         }
 
         account.setStatus(request.getStatus());
 
-        Account updatedAccount = accountRepository.save(account);
+        Account savedAccount = accountRepository.save(account);
 
-        return convertToResponse(updatedAccount);
+        logger.info("Account status changed accountId={} status={}", id, request.getStatus());
+
+        return convertToResponse(savedAccount);
     }
 }

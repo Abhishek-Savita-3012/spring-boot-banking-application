@@ -3,11 +3,12 @@ package com.example.banking_application.service;
 import com.example.banking_application.dto.LoginRequest;
 import com.example.banking_application.dto.LoginResponse;
 import com.example.banking_application.exception.InvalidCredentialsException;
-import com.example.banking_application.exception.UserNotFoundException;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Locale;
 
 @Service
 public class AuthService {
@@ -24,10 +25,13 @@ public class AuthService {
 
     public LoginResponse login(LoginRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
+        String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        User user = userRepository
+                .findByEmailIgnoreCase(normalizedEmail)
                 .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User with email " + request.getEmail() + " not found"
+                        new InvalidCredentialsException(
+                                "Invalid email or password"
                         )
                 );
 

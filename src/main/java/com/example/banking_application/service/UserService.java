@@ -7,6 +7,11 @@ import com.example.banking_application.model.User;
 import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.example.banking_application.exception.DuplicateEmailException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Locale;
 
 @Service
 public class UserService {
@@ -19,6 +24,8 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
     private UserResponse convertToResponse(User user) {
 
         return new UserResponse(
@@ -30,6 +37,14 @@ public class UserService {
 
     public UserResponse createUser(UserRequest request) {
 
+        String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new DuplicateEmailException(
+                    "An account with this email already exists"
+            );
+        }
+
         User user = new User();
 
         user.setName(request.getName());
@@ -38,6 +53,8 @@ public class UserService {
         user.setRole(Role.USER);
 
         User savedUser = userRepository.save(user);
+
+        logger.info("User registration completed userId={}", savedUser.getId());
 
         return convertToResponse(savedUser);
     }

@@ -3,26 +3,23 @@ package com.example.banking_application.service;
 import com.example.banking_application.dto.*;
 import com.example.banking_application.exception.*;
 import com.example.banking_application.model.Account;
-import com.example.banking_application.model.Role;
+import com.example.banking_application.model.AccountStatus;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.AccountRepository;
-import com.example.banking_application.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import com.example.banking_application.security.AccountAuthorizationService;
-import org.springframework.security.access.AccessDeniedException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 public class AccountService {
 
     private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
     private final AccountAuthorizationService accountAuthorizationService;
 
-    public AccountService(AccountRepository accountRepository, UserRepository userRepository, AccountAuthorizationService accountAuthorizationService) {
+    public AccountService(AccountRepository accountRepository, AccountAuthorizationService accountAuthorizationService) {
         this.accountRepository = accountRepository;
-        this.userRepository = userRepository;
         this.accountAuthorizationService = accountAuthorizationService;
     }
 
@@ -33,6 +30,7 @@ public class AccountService {
                 account.getAccountNumber(),
                 account.getAccountType(),
                 account.getBalance(),
+                account.getStatus(),
                 account.getUser().getId()
         );
     }
@@ -41,46 +39,33 @@ public class AccountService {
 
         User currentUser = accountAuthorizationService.getCurrentUser();
 
-        Long ownerId;
-
-        if (currentUser.getRole() == Role.ADMIN) {
-
-            ownerId = request.getUserId();
-
-        } else {
-
-            if (request.getUserId() != null && !request.getUserId().equals(currentUser.getId())) {
-
-                throw new AccessDeniedException(
-                        "You cannot create an account for another user"
-                );
-            }
-
-            ownerId = currentUser.getId();
-        }
-
-        User user = userRepository.findById(ownerId)
-                .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User not found with id: "
-                                        + ownerId
-                        )
-                );
-
         if (accountRepository.existsByAccountNumber(request.getAccountNumber())) {
-
             throw new DuplicateAccountException(
-                    "Account number already exists: "
-                            + request.getAccountNumber()
+                    "Account number already exists: " + request.getAccountNumber()
             );
         }
 
         Account account = new Account();
 
-        account.setAccountNumber(request.getAccountNumber());
-        account.setAccountType(request.getAccountType());
-        account.setBalance(request.getBalance());
-        account.setUser(user);
+        account.setAccountNumber(
+                request.getAccountNumber()
+        );
+
+        account.setAccountType(
+                request.getAccountType()
+        );
+
+        account.setBalance(
+                BigDecimal.ZERO
+        );
+
+        account.setStatus(
+                AccountStatus.ACTIVE
+        );
+
+        account.setUser(
+                currentUser
+        );
 
         Account savedAccount = accountRepository.save(account);
 
@@ -109,7 +94,7 @@ public class AccountService {
         return convertToResponse(account);
     }
 
-    public AccountResponse updateAccount(Long id, AccountRequest request) {
+    public AccountResponse updateAccount(Long id, AccountUpdateRequest request) {
 
         Account existingAccount = accountRepository.findById(id)
                 .orElseThrow(() ->
@@ -118,26 +103,7 @@ public class AccountService {
                         )
                 );
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() ->
-                        new UserNotFoundException(
-                                "User with ID " + request.getUserId() + " not found"
-                        )
-                );
-
-        existingAccount.setAccountNumber(
-                request.getAccountNumber()
-        );
-
-        existingAccount.setAccountType(
-                request.getAccountType()
-        );
-
-        existingAccount.setBalance(
-                request.getBalance()
-        );
-
-        existingAccount.setUser(user);
+        existingAccount.setAccountType(request.getAccountType());
 
         Account savedAccount = accountRepository.save(existingAccount);
 
@@ -152,5 +118,33 @@ public class AccountService {
                 );
 
         accountRepository.delete(account);
+    }
+
+    public AccountResponse updateAccountStatus(Long id, AccountStatusRequest request) {
+
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() ->
+                        new AccountNotFoundException(
+                                "Account not found with id: " + id
+                        )
+                );
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new InvalidTransferException(
+                    "A closed account cannot be reopened or modified"
+            );
+        }
+
+        if (request.getStatus() == AccountStatus.CLOSED && account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new InvalidTransferException(
+                    "Account balance must be zero before closing"
+            );
+        }
+
+        account.setStatus(request.getStatus());
+
+        Account updatedAccount = accountRepository.save(account);
+
+        return convertToResponse(updatedAccount);
     }
 }

@@ -5,6 +5,7 @@ import com.example.banking_application.exception.AccountNotFoundException;
 import com.example.banking_application.exception.InsufficientBalanceException;
 import com.example.banking_application.exception.InvalidTransferException;
 import com.example.banking_application.model.Account;
+import com.example.banking_application.model.AccountStatus;
 import com.example.banking_application.model.Transaction;
 import com.example.banking_application.model.TransactionType;
 import com.example.banking_application.repository.AccountRepository;
@@ -39,8 +40,24 @@ public class TransactionService {
                 account.getAccountNumber(),
                 account.getAccountType(),
                 account.getBalance(),
+                account.getStatus(),
                 account.getUser().getId()
         );
+    }
+
+    private void validateAccountForTransaction(Account account) {
+
+        if (account.getStatus() == AccountStatus.BLOCKED) {
+            throw new InvalidTransferException(
+                    "Transactions are not allowed on a blocked account"
+            );
+        }
+
+        if (account.getStatus() == AccountStatus.CLOSED) {
+            throw new InvalidTransferException(
+                    "Transactions are not allowed on a closed account"
+            );
+        }
     }
 
     @Transactional
@@ -54,6 +71,8 @@ public class TransactionService {
                 );
 
         accountAuthorizationService.checkAccountOwnership(account);
+
+        validateAccountForTransaction(account);
 
         BigDecimal newBalance = account.getBalance().add(request.getAmount());
 
@@ -84,6 +103,8 @@ public class TransactionService {
                 );
 
         accountAuthorizationService.checkAccountOwnership(account);
+
+        validateAccountForTransaction(account);
 
         if (account.getBalance().compareTo(request.getAmount()) < 0) {
             throw new InsufficientBalanceException(
@@ -136,6 +157,9 @@ public class TransactionService {
                                 "Receiver account not found with id: " + request.getReceiverAccountId()
                         )
                 );
+
+        validateAccountForTransaction(sender);
+        validateAccountForTransaction(receiver);
 
         if (sender.getId().equals(receiver.getId())) {
             throw new InvalidTransferException(

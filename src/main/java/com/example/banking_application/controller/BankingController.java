@@ -73,10 +73,9 @@ public class BankingController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/accounts/{id}")
-    public ResponseEntity<AccountResponse> updateAccount(@PathVariable Long id, @Valid @RequestBody AccountRequest request) {
+    public ResponseEntity<AccountResponse> updateAccount(@PathVariable Long id, @Valid @RequestBody AccountUpdateRequest request) {
 
-        AccountResponse response =
-                accountService.updateAccount(id, request);
+        AccountResponse response = accountService.updateAccount(id, request);
 
         return ResponseEntity.ok(response);
     }
@@ -95,5 +94,14 @@ public class BankingController {
         accountService.deleteAccount(id);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/accounts/{id}/status")
+    public ResponseEntity<AccountResponse> updateAccountStatus(@PathVariable Long id, @Valid @RequestBody AccountStatusRequest request) {
+
+        AccountResponse response = accountService.updateAccountStatus(id, request);
+
+        return ResponseEntity.ok(response);
     }
 }

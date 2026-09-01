@@ -1,5 +1,6 @@
 package com.example.banking_application.dto;
 
+import com.example.banking_application.model.AccountStatus;
 import com.example.banking_application.model.AccountType;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ public class AccountResponse {
     private String accountNumber;
     private AccountType accountType;
     private BigDecimal balance;
+    private AccountStatus status;
     private Long userId;
 
     public AccountResponse() {
@@ -20,12 +22,14 @@ public class AccountResponse {
             String accountNumber,
             AccountType accountType,
             BigDecimal balance,
+            AccountStatus status,
             Long userId) {
 
         this.id = id;
         this.accountNumber = accountNumber;
         this.accountType = accountType;
         this.balance = balance;
+        this.status = status;
         this.userId = userId;
     }
 
@@ -69,4 +73,13 @@ public class AccountResponse {
     public void setUserId(Long userId) {
         this.userId = userId;
     }
+
+    public AccountStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AccountStatus status) {
+        this.status = status;
+    }
+
 }

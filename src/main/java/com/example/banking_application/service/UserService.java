@@ -37,18 +37,19 @@ public class UserService {
 
     public UserResponse createUser(UserRequest request) {
 
-        String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new DuplicateEmailException(
-                    "An account with this email already exists"
-            );
+            throw new DuplicateEmailException("An account with this email already exists");
         }
 
         User user = new User();
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+        user.setName(request.getName().trim());
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.USER);
 

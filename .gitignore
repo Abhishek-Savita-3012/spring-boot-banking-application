@@ -1,37 +1,91 @@
-HELP.md
+# =========================================================
+# Spring Boot Banking Application
+# =========================================================
+
+
+# ---------------------------------------------------------
+# Environment variables / secrets
+# ---------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# Local application configuration containing secrets
+application-local.properties
+application-local.yml
+application-local.yaml
+
+
+# ---------------------------------------------------------
+# Maven build output
+# ---------------------------------------------------------
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# ---------------------------------------------------------
+# IntelliJ IDEA
+# ---------------------------------------------------------
+.idea/
 *.iml
+*.iws
 *.ipr
+out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# ---------------------------------------------------------
+# Eclipse / Spring Tool Suite
+# ---------------------------------------------------------
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+
+# ---------------------------------------------------------
+# VS Code
+# ---------------------------------------------------------
 .vscode/
 
-.env
-*.env
 
+# ---------------------------------------------------------
+# Java compiled files
+# ---------------------------------------------------------
+*.class
+
+
+# ---------------------------------------------------------
+# Logs
+# ---------------------------------------------------------
+*.log
+logs/
+
+
+# ---------------------------------------------------------
+# Operating system files
+# ---------------------------------------------------------
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+
+# ---------------------------------------------------------
+# Temporary files
+# ---------------------------------------------------------
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

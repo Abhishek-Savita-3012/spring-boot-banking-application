@@ -70,7 +70,7 @@ class SecurityIntegrationTest {
             throws Exception {
 
         mockMvc.perform(
-                        get("/api/admin/test")
+                        get("/api/accounts")
                 )
                 .andExpect(
                         status().isUnauthorized()
@@ -87,7 +87,7 @@ class SecurityIntegrationTest {
                 );
 
         mockMvc.perform(
-                        get("/api/admin/test")
+                        get("/api/auth/admin/test")
                                 .header(
                                         "Authorization",
                                         "Bearer " + userToken
@@ -113,7 +113,7 @@ class SecurityIntegrationTest {
                 );
 
         mockMvc.perform(
-                        get("/api/admin/test")
+                        get("/api/auth/admin/test")
                                 .header(
                                         "Authorization",
                                         "Bearer " + adminToken
@@ -132,7 +132,7 @@ class SecurityIntegrationTest {
             throws Exception {
 
         mockMvc.perform(
-                        get("/api/admin/test")
+                        get("/api/accounts")
                                 .header(
                                         "Authorization",
                                         "Bearer invalid.jwt.token"
@@ -154,7 +154,7 @@ class SecurityIntegrationTest {
                 );
 
         mockMvc.perform(
-                        get("/api/admin/test")
+                        get("/api/auth/admin/test")
                                 .header(
                                         "Authorization",
                                         "Bearer " + userToken

@@ -1,30 +1,34 @@
 # Spring Boot Banking Application
 
-A secure, production-oriented REST API for core banking operations, built with **Java 21, Spring Boot 4, Spring Security, Spring Data JPA, JWT, MySQL, and OpenAPI**.
+A secure, containerized REST API for core banking operations, built with **Java 21, Spring Boot 4, Spring Security, Spring Data JPA, JWT, MySQL, Docker, OpenAPI, and GitHub Actions**.
 
-The project demonstrates backend engineering practices beyond basic CRUD, including stateless authentication, role- and resource-level authorization, account lifecycle rules, transactional money transfers, pessimistic locking, centralized error handling, automated testing, and interactive API documentation.
+The project demonstrates backend engineering practices beyond basic CRUD, including stateless authentication, role- and resource-level authorization, account lifecycle management, transactional money transfers, pessimistic locking, persistent containerized infrastructure, automated testing, health monitoring, and continuous integration.
 
 ---
 
 ## Overview
 
-The Spring Boot Banking Application provides a RESTful backend for managing users, bank accounts, and financial transactions.
+The Spring Boot Banking Application is a RESTful backend for managing users, bank accounts, and financial transactions.
 
-The system supports:
+It provides:
 
 - User registration and authentication
 - JWT-based stateless security
 - `USER` and `ADMIN` authorization
-- Account ownership protection
+- Account ownership and IDOR protection
 - Savings and current accounts
 - Account lifecycle management
 - Deposits and withdrawals
 - Account-to-account transfers
 - Transaction history with pagination and filtering
-- OpenAPI/Swagger documentation
-- Unit, integration, and security testing
+- OpenAPI 3 / Swagger UI documentation
+- Spring Boot Actuator health monitoring
+- Dockerized application and MySQL services
+- Persistent MySQL storage using Docker volumes
+- Unit, integration, API, and security testing
+- Automated CI using GitHub Actions
 
-The application follows a layered architecture to keep HTTP handling, business logic, persistence, security, and API contracts clearly separated.
+The application follows a layered architecture that separates HTTP handling, business logic, security, persistence, validation, and API contracts.
 
 ---
 
@@ -39,27 +43,31 @@ The application follows a layered architecture to keep HTTP handling, business l
 | Authentication | JWT using JJWT 0.12.6 |
 | Persistence | Spring Data JPA |
 | ORM | Hibernate |
-| Production Database | MySQL |
+| Database | MySQL 8.4 |
 | Test Database | H2 |
 | Validation | Jakarta Bean Validation |
 | API Documentation | OpenAPI 3 / Swagger UI |
 | OpenAPI Integration | springdoc-openapi |
+| Health Monitoring | Spring Boot Actuator |
 | Unit Testing | JUnit 5, Mockito |
 | Integration Testing | Spring Boot Test, MockMvc |
+| Containerization | Docker |
+| Service Orchestration | Docker Compose |
+| CI | GitHub Actions |
 | Build Tool | Maven |
+| Version Control | Git / GitHub |
 
 ---
 
 ## Architecture
 
-The application follows a traditional layered backend architecture:
+### Application Architecture
 
 ```text
-                    ┌─────────────────────┐
-                    │       Client        │
-                    └──────────┬──────────┘
-                               │ HTTP / JSON
-                               ▼
+                     Client / Swagger UI
+                             │
+                             │ HTTP / JSON
+                             ▼
                     ┌─────────────────────┐
                     │     Controllers     │
                     └──────────┬──────────┘
@@ -82,14 +90,16 @@ The application follows a traditional layered backend architecture:
                     └─────────────────────┘
 ```
 
-Additional cross-cutting components provide:
+Cross-cutting components provide:
 
 - JWT authentication
-- Authorization
+- Role-based authorization
+- Resource ownership authorization
 - DTO validation
-- Exception handling
-- API documentation
 - Transaction management
+- Centralized exception handling
+- OpenAPI documentation
+- Health monitoring
 
 ### Package Structure
 
@@ -107,6 +117,38 @@ src/main/java/com/example/banking_application/
 │
 └── BankingApplication.java
 ```
+
+### Containerized Architecture
+
+```text
+                         Host Machine
+                              │
+                              │ :8080
+                              ▼
+                  ┌─────────────────────────┐
+                  │   Banking API Container │
+                  │                         │
+                  │ Spring Boot + Java 21   │
+                  │ Spring Security + JWT   │
+                  │ Spring Data JPA         │
+                  └────────────┬────────────┘
+                               │
+                               │ Docker Network
+                               │ jdbc:mysql://mysql:3306/banking_db
+                               ▼
+                  ┌─────────────────────────┐
+                  │     MySQL Container     │
+                  │        MySQL 8.4        │
+                  └────────────┬────────────┘
+                               │
+                               ▼
+                  ┌─────────────────────────┐
+                  │ Persistent Named Volume │
+                  │   banking_mysql_data    │
+                  └─────────────────────────┘
+```
+
+Docker Compose creates an isolated network where the application connects to MySQL using the service name `mysql` instead of `localhost`.
 
 ---
 
@@ -126,7 +168,6 @@ Verify Email + Password
 Generate JWT
      │
      ▼
-Client sends:
 Authorization: Bearer <JWT>
      │
      ▼
@@ -156,28 +197,30 @@ Protected Operation
 - IDOR protection
 - Generic invalid-credential responses
 - Case-insensitive email authentication
-- Externalized JWT secret
+- Externalized JWT signing secret
 - Custom `401 Unauthorized` responses
 - Custom `403 Forbidden` responses
+- No public API for assigning the `ADMIN` role
+- Environment-based sensitive configuration
 
 ### Authorization Model
 
 #### USER
 
-Authenticated users can perform banking operations on resources they own, including:
+Authenticated users can:
 
-- Create an account
-- View their own account
-- Deposit funds
-- Withdraw funds
-- Transfer funds from their account
+- Create bank accounts
+- View their own accounts
+- Deposit funds into their accounts
+- Withdraw funds from their accounts
+- Transfer funds from their accounts
 - View their transaction history
 
-A user cannot perform protected operations on another user's account.
+A `USER` cannot access another user's protected account resources.
 
 #### ADMIN
 
-Administrators can perform privileged account-management operations, including:
+Administrators can:
 
 - View all accounts
 - Access account information administratively
@@ -191,7 +234,7 @@ Public registration always creates a `USER`. Administrative privileges are not g
 
 ## Account Model
 
-Each account belongs to a user and has an account type, balance, and lifecycle status.
+Each account belongs to a user and contains an account number, account type, balance, and lifecycle status.
 
 ### Account Types
 
@@ -200,7 +243,7 @@ SAVINGS
 CURRENT
 ```
 
-### Account Status
+### Account Statuses
 
 ```text
 ACTIVE
@@ -208,7 +251,7 @@ BLOCKED
 CLOSED
 ```
 
-New accounts are created with:
+New accounts start with:
 
 ```text
 Balance: 0
@@ -225,20 +268,21 @@ ACTIVE ─────────────► BLOCKED
  CLOSED ◄──────────── CLOSED
 ```
 
-Key rules:
+Important rules:
 
 - A `CLOSED` account cannot be reopened.
-- An account must have a zero balance before closure.
-- Financial operations require an appropriate operational account state.
+- An account must have zero balance before closure.
+- Restricted financial operations require an operational account state.
 - Account ownership cannot be changed through the API.
 - Account numbers cannot be changed after creation.
-- Balances cannot be directly edited through account-management APIs.
+- Account balances cannot be directly edited through account-management endpoints.
+- Closing an account preserves its transaction history.
 
 ---
 
 ## Transaction Model
 
-The application maintains transaction records for balance-changing operations.
+The application maintains ledger records for every balance-changing operation.
 
 ### Transaction Types
 
@@ -249,39 +293,39 @@ TRANSFER_OUT
 TRANSFER_IN
 ```
 
-### Deposits
+### Deposit Flow
 
 A deposit:
 
 1. Verifies account ownership.
-2. Locks the account.
+2. Acquires a pessimistic database lock.
 3. Validates account state.
 4. Updates the balance.
-5. Creates a `DEPOSIT` transaction record.
+5. Records a `DEPOSIT` transaction.
 
-### Withdrawals
+### Withdrawal Flow
 
 A withdrawal:
 
 1. Verifies account ownership.
-2. Locks the account.
+2. Acquires a pessimistic database lock.
 3. Validates account state.
 4. Checks available balance.
 5. Updates the balance.
-6. Creates a `WITHDRAWAL` transaction record.
+6. Records a `WITHDRAWAL` transaction.
 
-### Transfers
+### Transfer Flow
 
-Transfers are executed transactionally.
+Transfers execute transactionally:
 
 ```text
 Sender Account
       │
       │ TRANSFER_OUT
       ▼
- ┌─────────┐
- │ Transfer│
- └─────────┘
+ ┌──────────┐
+ │ Transfer │
+ └──────────┘
       │
       │ TRANSFER_IN
       ▼
@@ -291,7 +335,7 @@ Receiver Account
 A transfer:
 
 1. Verifies ownership of the sender account.
-2. Validates the sender and receiver.
+2. Validates sender and receiver accounts.
 3. Locks both accounts in deterministic ID order.
 4. Validates both account states.
 5. Checks the sender's available balance.
@@ -300,9 +344,9 @@ A transfer:
 8. Records `TRANSFER_OUT`.
 9. Records `TRANSFER_IN`.
 
-Deterministic lock ordering helps reduce the risk of database deadlocks during concurrent transfers.
-
 Pessimistic locking protects critical balance-changing operations from concurrent modification.
+
+Deterministic lock ordering helps reduce the risk of database deadlocks during concurrent transfers.
 
 ---
 
@@ -312,8 +356,8 @@ Pessimistic locking protects critical balance-changing operations from concurren
 
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| `POST` | `/api/users` | Public | Register a new user |
-| `POST` | `/api/auth/login` | Public | Authenticate and receive JWT |
+| `POST` | `/api/users` | Public | Register a user |
+| `POST` | `/api/auth/login` | Public | Authenticate and receive a JWT |
 | `GET` | `/api/auth/admin/test` | ADMIN | Verify administrator access |
 
 ### Accounts
@@ -349,9 +393,9 @@ GET /api/transactions/1/records?page=0&size=10&sort=transactionDate,desc
 
 The API is documented using **OpenAPI 3 and Swagger UI**.
 
-After starting the application:
-
 ### Swagger UI
+
+After starting the application:
 
 ```text
 http://localhost:8080/swagger-ui.html
@@ -363,10 +407,10 @@ http://localhost:8080/swagger-ui.html
 http://localhost:8080/v3/api-docs
 ```
 
-The generated documentation includes:
+The generated API documentation includes:
 
 - Endpoint descriptions
-- Request schemas
+- Request and response schemas
 - DTO field descriptions
 - Example values
 - Enum values
@@ -376,14 +420,14 @@ The generated documentation includes:
 
 ### Authenticating in Swagger
 
-1. Register a user through `/api/users`.
-2. Login through `/api/auth/login`.
+1. Register through `POST /api/users`.
+2. Login through `POST /api/auth/login`.
 3. Copy the returned JWT.
 4. Click **Authorize** in Swagger UI.
 5. Paste the raw JWT.
 6. Execute protected endpoints.
 
-Swagger automatically sends:
+Swagger sends:
 
 ```http
 Authorization: Bearer <JWT>
@@ -391,17 +435,24 @@ Authorization: Bearer <JWT>
 
 ---
 
-## Getting Started
+## Running with Docker
+
+Docker Compose is the recommended way to run the complete application because it starts both the Spring Boot API and MySQL in an isolated environment.
 
 ### Prerequisites
 
-Make sure the following are available:
+Install:
 
-- Java 21+
-- MySQL
 - Git
+- Docker Desktop
+- Docker Compose
 
-The Maven Wrapper is included, so installing Maven separately is optional.
+Verify Docker:
+
+```bash
+docker version
+docker compose version
+```
 
 ### Clone the Repository
 
@@ -410,9 +461,108 @@ git clone https://github.com/Abhishek-Savita-3012/spring-boot-banking-applicatio
 cd spring-boot-banking-application
 ```
 
-### Create the Database
+### Configure Docker Environment Variables
 
-Create a MySQL database:
+Create a `.env` file in the project root:
+
+```env
+MYSQL_PASSWORD=your_banking_database_password
+MYSQL_ROOT_PASSWORD=your_mysql_root_password
+JWT_SECRET=your_long_secure_jwt_secret
+```
+
+Use strong values instead of the placeholders.
+
+The `.env` file is ignored by Git and must never be committed.
+
+### Build the Application Image
+
+```bash
+docker build -t banking-application:latest .
+```
+
+Verify the image:
+
+```bash
+docker images
+```
+
+### Validate Docker Compose
+
+```bash
+docker compose config
+```
+
+> `docker compose config` can display resolved environment-variable values. Avoid sharing its output when it contains secrets.
+
+### Start the Complete Stack
+
+```bash
+docker compose up -d
+```
+
+Verify the containers:
+
+```bash
+docker compose ps
+```
+
+The expected services are:
+
+```text
+banking-api      Up
+banking-mysql    Up (healthy)
+```
+
+The API is available at:
+
+```text
+http://localhost:8080
+```
+
+Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+Health endpoint:
+
+```text
+http://localhost:8080/actuator/health
+```
+
+### Stop the Stack
+
+```bash
+docker compose down
+```
+
+The containers are removed, but MySQL data remains stored in the named Docker volume.
+
+Inspect volumes with:
+
+```bash
+docker volume ls
+```
+
+> Do not use `docker compose down -v` unless you intentionally want to remove the persistent MySQL volume and its data.
+
+---
+
+## Running without Docker
+
+The application can also run directly against a local MySQL installation.
+
+### Prerequisites
+
+- Java 21+
+- MySQL
+- Git
+
+The Maven Wrapper is included, so a separate Maven installation is optional.
+
+### Create the Database
 
 ```sql
 CREATE DATABASE banking_db;
@@ -420,9 +570,9 @@ CREATE DATABASE banking_db;
 
 ### Configure Environment Variables
 
-The application does not require database credentials or JWT secrets to be committed to source control.
+The application expects sensitive configuration through environment variables.
 
-The expected configuration is:
+Example configuration:
 
 ```properties
 spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/banking_db}
@@ -433,7 +583,7 @@ jwt.secret=${JWT_SECRET}
 jwt.expiration-ms=${JWT_EXPIRATION_MS:3600000}
 ```
 
-Example PowerShell configuration:
+Example PowerShell environment:
 
 ```powershell
 $env:DB_USERNAME="your_mysql_username"
@@ -448,11 +598,7 @@ $env:DB_URL="jdbc:mysql://localhost:3306/banking_db"
 $env:JWT_EXPIRATION_MS="3600000"
 ```
 
-> Never commit real database credentials, JWT secrets, or `.env` files.
-
-### Run the Application
-
-Windows:
+Start the application on Windows:
 
 ```powershell
 .\mvnw spring-boot:run
@@ -464,7 +610,7 @@ Linux/macOS:
 ./mvnw spring-boot:run
 ```
 
-The API is available by default at:
+The API starts by default on:
 
 ```text
 http://localhost:8080
@@ -472,51 +618,128 @@ http://localhost:8080
 
 ---
 
-## Testing
+## Persistent Database Storage
 
-The project contains a comprehensive automated test suite covering business logic, persistence integration, HTTP behavior, authentication, authorization, validation, and error handling.
+The Docker environment uses a named volume for MySQL data.
+
+```text
+MySQL Container
+      │
+      ▼
+banking_mysql_data
+```
+
+This separates database state from the lifecycle of an individual container.
+
+As a result:
+
+```text
+docker compose down
+        │
+        ▼
+Containers removed
+        │
+        ▼
+Named volume preserved
+        │
+        ▼
+docker compose up -d
+        │
+        ▼
+Containers recreated
+        │
+        ▼
+Existing database data remains available
+```
+
+The persistence behavior has been verified by creating users, accounts, and transactions, removing the containers, recreating the stack, and confirming that the stored data remains available.
+
+---
+
+## Health Monitoring
+
+Spring Boot Actuator provides an operational health endpoint:
+
+```http
+GET /actuator/health
+```
+
+Example:
+
+```json
+{
+  "status": "UP"
+}
+```
+
+Depending on the configured Actuator health groups, the response may also expose liveness and readiness group names.
+
+The health endpoint allows container platforms, deployment systems, and monitoring tools to determine whether the application is available without invoking a business API.
+
+Only selected Actuator functionality is exposed publicly.
+
+---
+
+## Automated Testing
+
+The project contains **79 automated tests** covering business logic, persistence integration, HTTP behavior, authentication, authorization, validation, and error handling.
 
 ### Test Strategy
 
 ```text
-                    Automated Tests
-                          │
-             ┌────────────┴────────────┐
-             │                         │
-             ▼                         ▼
-        Unit Tests              Integration Tests
-             │                         │
-       JUnit + Mockito        SpringBootTest + MockMvc
-             │                         │
-      Service Isolation        Full Spring Context
-                                       │
-                                       ▼
-                                H2 Test Database
+                     Automated Tests
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+         Unit Tests              Integration Tests
+              │                         │
+        JUnit + Mockito        SpringBootTest + MockMvc
+              │                         │
+       Service Isolation        Full Spring Context
+                                        │
+                                        ▼
+                                 H2 Test Database
 ```
 
-### Unit Tests
+### Unit Tests — 24
 
-Service-layer unit tests use **JUnit 5 and Mockito**.
+Service-layer unit tests use **JUnit 5 and Mockito** without starting the complete Spring application context.
 
-Covered components include:
+Covered components:
 
 - `UserService`
 - `AuthService`
 - `AccountService`
 - `TransactionService`
 
-Unit tests verify business rules without starting the complete Spring application context.
+Coverage includes:
 
-### Integration & Security Tests
+- User registration
+- Email normalization
+- Duplicate email detection
+- Authentication
+- Account creation
+- Account lifecycle rules
+- Deposits
+- Withdrawals
+- Insufficient balance handling
+- Transfers
+- Transfer ledger creation
+- Deterministic account locking
+- Transaction history
+
+### Integration & Security Tests — 55
 
 Integration tests use:
 
 - `@SpringBootTest`
 - MockMvc
+- Spring Security
 - H2 in-memory database
 - Dedicated `test` profile
 
-They verify:
+Coverage includes:
 
 - User registration
 - Authentication
@@ -525,10 +748,10 @@ They verify:
 - `401` vs `403` behavior
 - Account ownership
 - IDOR protection
-- Account creation and updates
+- Account APIs
 - Account lifecycle rules
-- Deposits
-- Withdrawals
+- Transaction APIs
+- Deposits and withdrawals
 - Transfers
 - Insufficient balance handling
 - Transaction history
@@ -552,15 +775,13 @@ Skipped                        0
 BUILD SUCCESS
 ```
 
-Run the complete test suite:
-
-**Windows**
+Run all tests on Windows:
 
 ```powershell
 .\mvnw test
 ```
 
-**Linux/macOS**
+Linux/macOS:
 
 ```bash
 ./mvnw test
@@ -568,13 +789,62 @@ Run the complete test suite:
 
 ---
 
+## Continuous Integration
+
+The repository includes a GitHub Actions workflow:
+
+```text
+.github/workflows/ci.yml
+```
+
+The CI workflow runs automatically on:
+
+- Pushes to `main`
+- Pull requests targeting `main`
+
+### CI Pipeline
+
+```text
+Push / Pull Request
+        │
+        ▼
+GitHub Actions
+        │
+        ▼
+Fresh Ubuntu Runner
+        │
+        ├── Checkout Repository
+        │
+        ├── Configure Java 21
+        │
+        ├── Cache Maven Dependencies
+        │
+        └── Run Automated Tests
+                     │
+                     ▼
+                 79 Tests
+                  │     │
+                  ▼     ▼
+                PASS   FAIL
+                  │
+                  ▼
+             CI Success
+```
+
+The pipeline verifies the project independently from the developer's local environment.
+
+Integration tests use the H2 test database, so the CI workflow does not require production MySQL credentials.
+
+---
+
 ## Error Handling
 
-The application uses centralized exception handling to provide consistent API responses.
+The application uses centralized exception handling to provide consistent HTTP responses.
 
 | HTTP Status | Usage |
 |---|---|
 | `200 OK` | Successful operation |
+| `201 Created` | Resource created successfully |
 | `400 Bad Request` | Validation failure or malformed request |
 | `401 Unauthorized` | Missing or invalid authentication |
 | `403 Forbidden` | Authenticated user lacks permission |
@@ -588,7 +858,7 @@ Unexpected internal exceptions are logged server-side while clients receive a ge
 
 ## Business & Security Rules
 
-Some of the important rules enforced by the backend are:
+Important rules enforced by the backend include:
 
 - New users receive the `USER` role by default.
 - Emails are normalized for case-insensitive authentication and duplicate detection.
@@ -597,14 +867,14 @@ Some of the important rules enforced by the backend are:
 - Users can operate only on accounts they own.
 - Transfers require ownership of the source account, not the receiver account.
 - Account numbers and owners are immutable.
-- Account balances cannot be directly modified through account update endpoints.
-- Balance changes occur through ledgered transactions.
+- Account balances cannot be directly modified through account-management APIs.
+- Balance changes occur only through ledgered financial operations.
 - Blocked or closed accounts cannot perform restricted financial operations.
 - Accounts must have zero balance before closure.
 - Closed accounts cannot be reopened.
-- Account closure does not delete transaction history.
-- Transfer operations produce separate outgoing and incoming ledger records.
-- Critical account updates use pessimistic locking.
+- Account closure preserves transaction history.
+- Transfers produce separate outgoing and incoming ledger records.
+- Critical account operations use pessimistic database locking.
 - Transfers acquire locks in deterministic order to reduce deadlock risk.
 
 ---
@@ -613,51 +883,140 @@ Some of the important rules enforced by the backend are:
 
 ### Why JWT?
 
-JWT enables stateless authentication, allowing the backend to authenticate API requests without maintaining server-side HTTP sessions.
+JWT enables stateless authentication, allowing protected requests to be authenticated without maintaining server-side HTTP sessions.
 
 ### Why DTOs?
 
-DTOs prevent persistence entities from becoming the public API contract and provide dedicated models for validation and responses.
+DTOs separate the persistence model from the public API contract and provide dedicated request/response models for validation and controlled data exposure.
 
 ### Why Resource Ownership Checks?
 
-Role checks alone are insufficient. Two users can both have the `USER` role, but one user must not be able to access another user's account by changing an account ID in the request.
+Role authorization alone is insufficient.
 
-Resource ownership validation protects against this class of IDOR vulnerability.
+Two users may both have the `USER` role, but one user must not gain access to another user's account simply by changing an account ID in a request.
+
+Resource-level ownership validation protects against this class of IDOR vulnerability.
 
 ### Why Pessimistic Locking?
 
-Bank balances are shared mutable financial state. Concurrent requests could otherwise read and update the same balance simultaneously.
+Account balances are shared mutable financial state.
 
-Pessimistic locking serializes critical account modifications at the database level.
+Concurrent requests could otherwise read and update the same balance simultaneously. Pessimistic database locking serializes critical balance-changing operations.
+
+### Why Deterministic Lock Ordering?
+
+Transfers modify two accounts.
+
+Acquiring both account locks in a consistent ID order reduces the possibility of concurrent transfers acquiring the same locks in opposite order and deadlocking.
 
 ### Why Separate `TRANSFER_OUT` and `TRANSFER_IN` Records?
 
-A transfer affects two accounts. Separate ledger records make each account's transaction history accurately represent its side of the transfer.
+A transfer affects two accounts.
+
+Separate ledger records allow each account's transaction history to accurately represent its side of the transfer.
+
+### Why Docker Compose?
+
+The application depends on both Spring Boot and MySQL.
+
+Docker Compose provides a reproducible multi-container environment, internal service networking, environment-based configuration, startup dependency management, and persistent database storage.
+
+### Why H2 for Integration Tests?
+
+Integration tests need a fast, isolated, disposable database.
+
+Using an H2 in-memory database through a dedicated Spring test profile allows the full test suite to run locally and in GitHub Actions without requiring production database credentials.
+
+---
+
+## Configuration & Secrets
+
+Sensitive configuration is externalized through environment variables.
+
+The repository should not contain:
+
+- Database passwords
+- MySQL root passwords
+- JWT signing secrets
+- Local `.env` files
+
+Local Docker secrets are supplied through a Git-ignored `.env` file.
+
+For direct local execution, configuration can be provided through operating-system environment variables or IDE run configuration.
+
+Example configuration files should contain placeholders only.
+
+> If a real credential has ever been committed to Git history, removing it from the current file does not invalidate that credential. Rotate exposed credentials.
+
+---
+
+## Project Highlights
+
+- Layered Spring Boot REST architecture
+- Stateless JWT authentication
+- BCrypt password hashing
+- USER/ADMIN role-based authorization
+- Method-level security
+- Resource ownership and IDOR protection
+- Account lifecycle enforcement
+- Immutable account ownership and account numbers
+- Transactional deposits, withdrawals, and transfers
+- Pessimistic locking for balance-changing operations
+- Deterministic transfer lock ordering
+- Separate `TRANSFER_OUT` and `TRANSFER_IN` ledger entries
+- Paginated and filterable transaction history
+- Centralized exception handling
+- OpenAPI 3 documentation
+- Interactive Swagger UI with JWT authorization
+- 79 automated unit, integration, API, and security tests
+- Multi-stage Docker image
+- Docker Compose application + MySQL orchestration
+- Isolated container networking
+- Persistent MySQL Docker volume
+- Environment-based secret configuration
+- Spring Boot Actuator health monitoring
+- Automated GitHub Actions CI
+- Java 21 test execution on a fresh Linux CI runner
 
 ---
 
 ## Project Status
 
-The current backend includes:
+### Backend
 
 - [x] REST API architecture
 - [x] User registration
 - [x] JWT authentication
 - [x] Role-based authorization
 - [x] Resource ownership authorization
+- [x] IDOR protection
 - [x] Account lifecycle management
 - [x] Deposits and withdrawals
 - [x] Account-to-account transfers
 - [x] Transaction ledger
 - [x] Pagination and filtering
 - [x] Centralized exception handling
+
+### Quality
+
+- [x] DTO validation
 - [x] Unit testing
 - [x] Integration testing
 - [x] Security testing
-- [x] OpenAPI documentation
+- [x] 79 automated tests
+- [x] OpenAPI 3 documentation
 - [x] Swagger UI
+
+### DevOps
+
 - [x] Externalized secrets
+- [x] Docker image
+- [x] Docker Compose
+- [x] Containerized MySQL
+- [x] Persistent Docker volume
+- [x] Actuator health endpoint
+- [x] GitHub Actions CI
+- [x] Automated tests on push and pull request
 
 ---
 
@@ -671,18 +1030,19 @@ Potential future improvements include:
 - Audit logging
 - Rate limiting
 - Flyway or Liquibase database migrations
-- Docker containerization
-- CI/CD with automated test execution
+- Additional observability and metrics
 - Cloud deployment
-- Monitoring and observability
 - Frontend banking dashboard
 
 ---
 
 ## Repository
 
-**GitHub:**  
-`https://github.com/Abhishek-Savita-3012/spring-boot-banking-application`
+GitHub:
+
+```text
+https://github.com/Abhishek-Savita-3012/spring-boot-banking-application
+```
 
 ---
 

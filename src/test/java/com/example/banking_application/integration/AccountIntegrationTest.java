@@ -3,6 +3,7 @@ package com.example.banking_application.integration;
 import com.example.banking_application.model.Role;
 import com.example.banking_application.model.User;
 import com.example.banking_application.repository.AccountRepository;
+import com.example.banking_application.repository.TransactionRepository;
 import com.example.banking_application.repository.UserRepository;
 import com.example.banking_application.service.JwtService;
 import com.jayway.jsonpath.JsonPath;
@@ -35,6 +36,9 @@ class AccountIntegrationTest {
     private AccountRepository accountRepository;
 
     @Autowired
+    private TransactionRepository transactionRepository;
+
+    @Autowired
     private JwtService jwtService;
 
     private User userOne;
@@ -48,7 +52,9 @@ class AccountIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
 
-        // Child table first because accounts reference users.
+        // Delete child records before parent records
+        // Transaction -> Account -> User
+        transactionRepository.deleteAll();
         accountRepository.deleteAll();
         userRepository.deleteAll();
 
